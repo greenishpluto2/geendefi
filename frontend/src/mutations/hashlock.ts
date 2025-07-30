@@ -316,10 +316,10 @@ export function useReclaimHashlockMutation() {
   return useMutation({
     mutationFn: async ({
       hashlockId,
-      // hashlockType,
+      hashlockType,
     }: {
       hashlockId: string;
-      // hashlockType: string;
+      hashlockType: string;
     }) => {
       if (!currentAccount?.address)
         throw new Error("You need to connect your wallet!");
@@ -331,7 +331,7 @@ export function useReclaimHashlockMutation() {
           txb.object(hashlockId),
           txb.object('0x6'), // Clock object
         ],
-        // typeArguments: [hashlockType],
+        typeArguments: [hashlockType],
       });
 
       txb.transferObjects([result], txb.pure.address(currentAccount.address));

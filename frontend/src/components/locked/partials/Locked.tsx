@@ -14,7 +14,8 @@ import { useState } from "react";
 import { ApiLockedObject } from "@/types/types";
 import { CreateEscrow } from "../../escrows/CreateEscrow";
 import { CreateHashlockEscrow } from "../../escrows/CreateHashlockEscrow";
-import { useUnlockMutation } from "@/mutations/locked";
+// import { useUnlockMutation } from "@/mutations/locked";
+import { useReclaimHashlockMutation } from "@/mutations/hashlock";
 
 /**
  * Prefer to use the `Locked` component only through `LockedObject`.
@@ -33,7 +34,7 @@ export function Locked({
   const [isToggled, setIsToggled] = useState(false);
   const [escrowTab, setEscrowTab] = useState("regular");
   const account = useCurrentAccount();
-  const { mutate: unlockMutation, isPending } = useUnlockMutation();
+  const { mutate: unlockMutation, isPending } = useReclaimHashlockMutation();
 
   const suiObject = useSuiClientQuery(
     "getObject",
@@ -91,10 +92,12 @@ export function Locked({
             className="ml-auto cursor-pointer"
             disabled={isPending}
             onClick={() => {
+              console.log('1111', suiObject)
               unlockMutation({
-                lockedId: locked.objectId,
-                keyId: locked.keyId,
-                suiObject: suiObject.data!,
+                hashlockId: locked.objectId,
+                hashlockType: 'owned'
+                // keyId: locked.keyId,
+                // suiObject: suiObject.data!,
               });
             }}
           >
