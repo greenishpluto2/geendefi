@@ -1,0 +1,5 @@
+dev.db
+dev.db-journal
+shell.nix
+node_modules
+migrations
