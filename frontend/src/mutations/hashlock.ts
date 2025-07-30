@@ -305,3 +305,38 @@ export function useClaimHashlockMutation() {
     },
   });
 } 
+
+/**
+ * Reclaim after timer
+ */
+export function useReclaimHashlockMutation() {
+  const currentAccount = useCurrentAccount();
+  const executeTransaction = useTransactionExecution();
+
+  return useMutation({
+    mutationFn: async ({
+      hashlockId,
+      // hashlockType,
+    }: {
+      hashlockId: string;
+      // hashlockType: string;
+    }) => {
+      if (!currentAccount?.address)
+        throw new Error("You need to connect your wallet!");
+
+      const txb = new Transaction();
+      const result = txb.moveCall({
+        target: `${CONSTANTS.escrowContract.packageId}::hashlock::reclaim_after_timeout`,
+        arguments: [
+          txb.object(hashlockId),
+          txb.object('0x6'), // Clock object
+        ],
+        // typeArguments: [hashlockType],
+      });
+
+      txb.transferObjects([result], txb.pure.address(currentAccount.address));
+
+      return executeTransaction(txb);
+    },
+  });
+} 
