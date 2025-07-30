@@ -92,10 +92,9 @@ export function Locked({
             className="ml-auto cursor-pointer"
             disabled={isPending}
             onClick={() => {
-              console.log('1111', suiObject)
               unlockMutation({
                 hashlockId: locked.objectId,
-                hashlockType: 'owned'
+                hashlockType: '???'
                 // keyId: locked.keyId,
                 // suiObject: suiObject.data!,
               });
