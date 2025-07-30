@@ -76,6 +76,10 @@ app.get('/escrows', async (req, res) => {
 			key: 'sender',
 			type: WhereParamTypes.STRING,
 		},
+		{
+			key: 'isHashlock',
+			type: WhereParamTypes.BOOLEAN,
+		},
 	];
 
 	try {

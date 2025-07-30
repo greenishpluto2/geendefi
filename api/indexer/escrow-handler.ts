@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '../db';
 
-type EscrowEvent = EscrowCreated | EscrowCancelled | EscrowSwapped;
+type EscrowEvent = EscrowCreated | EscrowCancelled | EscrowSwapped | HashlockEscrowCreated | SecretRevealed;
 
 type EscrowCreated = {
 	sender: string;
@@ -21,6 +21,24 @@ type EscrowSwapped = {
 
 type EscrowCancelled = {
 	escrow_id: string;
+};
+
+type HashlockEscrowCreated = {
+	sender: string;
+	recipient: string;
+	escrow_id: string;
+	key_id: string;
+	item_id: string;
+	hash_commitment: number[]; // vector<u8> comes as number array
+	created_at: string;
+	expires_at: string;
+};
+
+type SecretRevealed = {
+	escrow_id: string;
+	secret: number[]; // vector<u8> comes as number array
+	secret_hash: number[];
+	revealer: string;
 };
 
 /**
@@ -44,22 +62,41 @@ export const handleEscrowObjects = async (events: SuiEvent[], type: string) => {
 		}
 
 		// Escrow cancellation case
-		if (event.type.endsWith('::EscrowCancelled')) {
+		if (event.type.endsWith('::EscrowCancelled') || event.type.endsWith('::HashlockEscrowCancelled')) {
 			const data = event.parsedJson as EscrowCancelled;
 			updates[data.escrow_id].cancelled = true;
 			continue;
 		}
 
 		// Escrow swap case
-		if (event.type.endsWith('::EscrowSwapped')) {
+		if (event.type.endsWith('::EscrowSwapped') || event.type.endsWith('::HashlockEscrowSwapped')) {
 			const data = event.parsedJson as EscrowSwapped;
 			updates[data.escrow_id].swapped = true;
 			continue;
 		}
 
-		const creationData = event.parsedJson as EscrowCreated;
+		// Secret revealed case (for hashlock escrows)
+		if (event.type.endsWith('::SecretRevealed')) {
+			const data = event.parsedJson as SecretRevealed;
+			updates[data.escrow_id].secretRevealed = Buffer.from(data.secret).toString('hex');
+			continue;
+		}
 
-		// Handle creation event
+		// Handle hashlock escrow creation
+		if (event.type.endsWith('::HashlockEscrowCreated')) {
+			const creationData = event.parsedJson as HashlockEscrowCreated;
+			updates[data.escrow_id].sender = creationData.sender;
+			updates[data.escrow_id].recipient = creationData.recipient;
+			updates[data.escrow_id].keyId = creationData.key_id;
+			updates[data.escrow_id].itemId = creationData.item_id;
+			updates[data.escrow_id].isHashlock = true;
+			updates[data.escrow_id].hashCommitment = Buffer.from(creationData.hash_commitment).toString('hex');
+			updates[data.escrow_id].timeoutMs = creationData.expires_at;
+			continue;
+		}
+
+		// Handle regular escrow creation
+		const creationData = event.parsedJson as EscrowCreated;
 		updates[data.escrow_id].sender = creationData.sender;
 		updates[data.escrow_id].recipient = creationData.recipient;
 		updates[data.escrow_id].keyId = creationData.key_id;

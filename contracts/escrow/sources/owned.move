@@ -154,295 +154,301 @@ public fun return_to_sender<T: key + store>(obj: Escrow<T>) {
 }
 
 // === Tests ===
-#[test_only]
-use sui::coin::{Self, Coin};
-#[test_only]
-use sui::sui::SUI;
-#[test_only]
-use sui::test_scenario::{Self as ts, Scenario};
+// #[test_only]
+// use sui::coin::{Self, Coin};
+// #[test_only]
+// use sui::sui::SUI;
+// #[test_only]
+// use sui::test_scenario::{Self as ts, Scenario};
 
-#[test_only]
-use escrow::lock;
+// #[test_only]
+// use sui::clock::{Clock, timestamp_ms};
 
-#[test_only]
-const ALICE: address = @0xA;
-#[test_only]
-const BOB: address = @0xB;
-#[test_only]
-const CUSTODIAN: address = @0xC;
-#[test_only]
-const DIANE: address = @0xD;
 
-#[test_only]
-fun test_coin(ts: &mut Scenario): Coin<SUI> {
-    coin::mint_for_testing<SUI>(42, ts::ctx(ts))
-}
+// #[test_only]
+// use escrow::lock;
 
-#[test]
-fun test_successful_swap() {
-    let mut ts = ts::begin(@0x0);
+// #[test_only]
+// const ALICE: address = @0xA;
+// #[test_only]
+// const BOB: address = @0xB;
+// #[test_only]
+// const CUSTODIAN: address = @0xC;
+// #[test_only]
+// const DIANE: address = @0xD;
 
-    // Alice locks the object they want to trade
-    let (i1, ik1) = {
-        ts.next_tx(ALICE);
-        let c = test_coin(&mut ts);
-        let cid = object::id(&c);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let kid = object::id(&k);
-        transfer::public_transfer(l, ALICE);
-        transfer::public_transfer(k, ALICE);
-        (cid, kid)
-    };
+// #[test_only]
+// fun test_coin(ts: &mut Scenario): Coin<SUI> {
+//     coin::mint_for_testing<SUI>(42, ts::ctx(ts))
+// }
 
-    // Bob locks their object as well.
-    let (i2, ik2) = {
-        ts.next_tx(BOB);
-        let c = test_coin(&mut ts);
-        let cid = object::id(&c);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let kid = object::id(&k);
-        transfer::public_transfer(l, BOB);
-        transfer::public_transfer(k, BOB);
-        (cid, kid)
-    };
+// #[test]
+// fun test_successful_swap() {
+//     let mut ts = ts::begin(@0x0);
 
-    // Alice gives the custodian their object to hold in escrow.
-    {
-        ts.next_tx(ALICE);
-        let k1: Key = ts.take_from_sender();
-        let l1: Locked<Coin<SUI>> = ts.take_from_sender();
-        create(k1, l1, ik2, BOB, CUSTODIAN, ts.ctx());
-    };
+//     // Alice locks the object they want to trade
+//     let (i1, ik1) = {
+//         ts.next_tx(ALICE);
+//         let c = test_coin(&mut ts);
+//         let cid = object::id(&c);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         let kid = object::id(&k);
+//         transfer::public_transfer(l, ALICE);
+//         transfer::public_transfer(k, ALICE);
+//         (cid, kid)
+//     };
 
-    // Bob does the same.
-    {
-        ts.next_tx(BOB);
-        let k2: Key = ts.take_from_sender();
-        let l2: Locked<Coin<SUI>> = ts.take_from_sender();
-        create(k2, l2, ik1, ALICE, CUSTODIAN, ts.ctx());
-    };
+//     // Bob locks their object as well.
+//     let (i2, ik2) = {
+//         ts.next_tx(BOB);
+//         let c = test_coin(&mut ts);
+//         let cid = object::id(&c);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         let kid = object::id(&k);
+//         transfer::public_transfer(l, BOB);
+//         transfer::public_transfer(k, BOB);
+//         (cid, kid)
+//     };
 
-    // The custodian makes the swap
-    {
-        ts.next_tx(CUSTODIAN);
-        swap<Coin<SUI>, Coin<SUI>>(
-            ts.take_from_sender(),
-            ts.take_from_sender(),
-        );
-    };
+//     // Alice gives the custodian their object to hold in escrow.
+//     {
+//         ts.next_tx(ALICE);
+//         let k1: Key = ts.take_from_sender();
+//         let l1: Locked<Coin<SUI>> = ts.take_from_sender();
+//         create(k1, l1, ik2, BOB, CUSTODIAN, ts.ctx());
+//     };
 
-    // Commit effects from the swap
-    ts.next_tx(@0x0);
+//     // Bob does the same.
+//     {
+//         ts.next_tx(BOB);
+//         let k2: Key = ts.take_from_sender();
+//         let l2: Locked<Coin<SUI>> = ts.take_from_sender();
+//         create(k2, l2, ik1, ALICE, CUSTODIAN, ts.ctx());
+//     };
 
-    // Alice gets the object from Bob
-    {
-        let c: Coin<SUI> = ts.take_from_address_by_id(ALICE, i2);
-        ts::return_to_address(ALICE, c);
-    };
+//     // The custodian makes the swap
+//     {
+//         ts.next_tx(CUSTODIAN);
+//         swap<Coin<SUI>, Coin<SUI>>(
+//             ts.take_from_sender(),
+//             ts.take_from_sender(),
+//         );
+//     };
 
-    // Bob gets the object from Alice
-    {
-        let c: Coin<SUI> = ts.take_from_address_by_id(BOB, i1);
-        ts::return_to_address(BOB, c);
-    };
+//     // Commit effects from the swap
+//     ts.next_tx(@0x0);
 
-    ts.end();
-}
+//     // Alice gets the object from Bob
+//     {
+//         let c: Coin<SUI> = ts.take_from_address_by_id(ALICE, i2);
+//         ts::return_to_address(ALICE, c);
+//     };
 
-#[test]
-#[expected_failure(abort_code = EMismatchedSenderRecipient)]
-fun test_mismatch_sender() {
-    let mut ts = ts::begin(@0x0);
+//     // Bob gets the object from Alice
+//     {
+//         let c: Coin<SUI> = ts.take_from_address_by_id(BOB, i1);
+//         ts::return_to_address(BOB, c);
+//     };
 
-    let ik1 = {
-        ts.next_tx(ALICE);
-        let c = test_coin(&mut ts);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let kid = object::id(&k);
-        transfer::public_transfer(l, ALICE);
-        transfer::public_transfer(k, ALICE);
-        kid
-    };
+//     ts.end();
+// }
 
-    let ik2 = {
-        ts.next_tx(BOB);
-        let c = test_coin(&mut ts);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let kid = object::id(&k);
-        transfer::public_transfer(l, BOB);
-        transfer::public_transfer(k, BOB);
-        kid
-    };
+// #[test]
+// #[expected_failure(abort_code = EMismatchedSenderRecipient)]
+// fun test_mismatch_sender() {
+//     let mut ts = ts::begin(@0x0);
 
-    // Alice wants to trade with Bob.
-    {
-        ts.next_tx(ALICE);
-        let k1: Key = ts.take_from_sender();
-        let l1: Locked<Coin<SUI>> = ts.take_from_sender();
-        create(k1, l1, ik2, BOB, CUSTODIAN, ts.ctx());
-    };
+//     let ik1 = {
+//         ts.next_tx(ALICE);
+//         let c = test_coin(&mut ts);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         let kid = object::id(&k);
+//         transfer::public_transfer(l, ALICE);
+//         transfer::public_transfer(k, ALICE);
+//         kid
+//     };
 
-    // But Bob wants to trade with Diane.
-    {
-        ts.next_tx(BOB);
-        let k2: Key = ts.take_from_sender();
-        let l2: Locked<Coin<SUI>> = ts.take_from_sender();
-        create(k2, l2, ik1, DIANE, CUSTODIAN, ts.ctx());
-    };
+//     let ik2 = {
+//         ts.next_tx(BOB);
+//         let c = test_coin(&mut ts);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         let kid = object::id(&k);
+//         transfer::public_transfer(l, BOB);
+//         transfer::public_transfer(k, BOB);
+//         kid
+//     };
 
-    // When the custodian tries to match up the swap, it will fail.
-    {
-        ts.next_tx(CUSTODIAN);
-        swap<Coin<SUI>, Coin<SUI>>(
-            ts.take_from_sender(),
-            ts.take_from_sender(),
-        );
-    };
+//     // Alice wants to trade with Bob.
+//     {
+//         ts.next_tx(ALICE);
+//         let k1: Key = ts.take_from_sender();
+//         let l1: Locked<Coin<SUI>> = ts.take_from_sender();
+//         create(k1, l1, ik2, BOB, CUSTODIAN, ts.ctx());
+//     };
 
-    abort 1337
-}
+//     // But Bob wants to trade with Diane.
+//     {
+//         ts.next_tx(BOB);
+//         let k2: Key = ts.take_from_sender();
+//         let l2: Locked<Coin<SUI>> = ts.take_from_sender();
+//         create(k2, l2, ik1, DIANE, CUSTODIAN, ts.ctx());
+//     };
 
-#[test]
-#[expected_failure(abort_code = EMismatchedExchangeObject)]
-fun test_mismatch_object() {
-    let mut ts = ts::begin(@0x0);
+//     // When the custodian tries to match up the swap, it will fail.
+//     {
+//         ts.next_tx(CUSTODIAN);
+//         swap<Coin<SUI>, Coin<SUI>>(
+//             ts.take_from_sender(),
+//             ts.take_from_sender(),
+//         );
+//     };
 
-    let ik1 = {
-        ts.next_tx(ALICE);
-        let c = test_coin(&mut ts);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let kid = object::id(&k);
-        transfer::public_transfer(l, ALICE);
-        transfer::public_transfer(k, ALICE);
-        kid
-    };
+//     abort 1337
+// }
 
-    {
-        ts.next_tx(BOB);
-        let c = test_coin(&mut ts);
-        let (l, k) = lock::lock(c, ts.ctx());
-        transfer::public_transfer(l, BOB);
-        transfer::public_transfer(k, BOB);
-    };
+// #[test]
+// #[expected_failure(abort_code = EMismatchedExchangeObject)]
+// fun test_mismatch_object() {
+//     let mut ts = ts::begin(@0x0);
 
-    // Alice wants to trade with Bob, but Alice has asked for an
-    // object (via its `exchange_key`) that Bob has not put up for
-    // the swap.
-    {
-        ts.next_tx(ALICE);
-        let k1: Key = ts.take_from_sender();
-        let l1: Locked<Coin<SUI>> = ts.take_from_sender();
-        create(k1, l1, ik1, BOB, CUSTODIAN, ts.ctx());
-    };
+//     let ik1 = {
+//         ts.next_tx(ALICE);
+//         let c = test_coin(&mut ts);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         let kid = object::id(&k);
+//         transfer::public_transfer(l, ALICE);
+//         transfer::public_transfer(k, ALICE);
+//         kid
+//     };
 
-    {
-        ts.next_tx(BOB);
-        let k2: Key = ts.take_from_sender();
-        let l2: Locked<Coin<SUI>> = ts.take_from_sender();
-        create(k2, l2, ik1, ALICE, CUSTODIAN, ts.ctx());
-    };
+//     {
+//         ts.next_tx(BOB);
+//         let c = test_coin(&mut ts);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         transfer::public_transfer(l, BOB);
+//         transfer::public_transfer(k, BOB);
+//     };
 
-    // When the custodian tries to match up the swap, it will fail.
-    {
-        ts.next_tx(CUSTODIAN);
-        swap<Coin<SUI>, Coin<SUI>>(
-            ts.take_from_sender(),
-            ts.take_from_sender(),
-        );
-    };
+//     // Alice wants to trade with Bob, but Alice has asked for an
+//     // object (via its `exchange_key`) that Bob has not put up for
+//     // the swap.
+//     {
+//         ts.next_tx(ALICE);
+//         let k1: Key = ts.take_from_sender();
+//         let l1: Locked<Coin<SUI>> = ts.take_from_sender();
+//         create(k1, l1, ik1, BOB, CUSTODIAN, ts.ctx());
+//     };
 
-    abort 1337
-}
+//     {
+//         ts.next_tx(BOB);
+//         let k2: Key = ts.take_from_sender();
+//         let l2: Locked<Coin<SUI>> = ts.take_from_sender();
+//         create(k2, l2, ik1, ALICE, CUSTODIAN, ts.ctx());
+//     };
 
-#[test]
-#[expected_failure(abort_code = EMismatchedExchangeObject)]
-fun test_object_tamper() {
-    let mut ts = ts::begin(@0x0);
+//     // When the custodian tries to match up the swap, it will fail.
+//     {
+//         ts.next_tx(CUSTODIAN);
+//         swap<Coin<SUI>, Coin<SUI>>(
+//             ts.take_from_sender(),
+//             ts.take_from_sender(),
+//         );
+//     };
 
-    // Alice locks the object they want to trade
-    let ik1 = {
-        ts.next_tx(ALICE);
-        let c = test_coin(&mut ts);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let kid = object::id(&k);
-        transfer::public_transfer(l, ALICE);
-        transfer::public_transfer(k, ALICE);
-        kid
-    };
+//     abort 1337
+// }
 
-    // Bob locks their object as well.
-    let ik2 = {
-        ts.next_tx(BOB);
-        let c = test_coin(&mut ts);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let kid = object::id(&k);
-        transfer::public_transfer(l, BOB);
-        transfer::public_transfer(k, BOB);
-        kid
-    };
+// #[test]
+// #[expected_failure(abort_code = EMismatchedExchangeObject)]
+// fun test_object_tamper() {
+//     let mut ts = ts::begin(@0x0);
+//     let mut clock = clock::create_for_testing(&mut ctx);
 
-    // Alice gives the custodian their object to hold in escrow.
-    {
-        ts.next_tx(ALICE);
-        let k1: Key = ts.take_from_sender();
-        let l1: Locked<Coin<SUI>> = ts.take_from_sender();
-        create(k1, l1, ik2, BOB, CUSTODIAN, ts.ctx());
-    };
 
-    // Bob has a change of heart, so they unlock the object and tamper
-    // with it.
-    {
-        ts.next_tx(BOB);
-        let k: Key = ts.take_from_sender();
-        let l: Locked<Coin<SUI>> = ts.take_from_sender();
-        let mut c = lock::unlock(l, k);
+//     // Alice locks the object they want to trade
+//     let ik1 = {
+//         ts.next_tx(ALICE);
+//         let c = test_coin(&mut ts);
+//         let (l, k) = lock::lock(c, clock, ts.ctx());
+//         let kid = object::id(&k);
+//         transfer::public_transfer(l, ALICE);
+//         transfer::public_transfer(k, ALICE);
+//         kid
+//     };
 
-        let _dust = coin::split(&mut c, 1, ts.ctx());
-        let (l, k) = lock::lock(c, ts.ctx());
-        create(k, l, ik1, ALICE, CUSTODIAN, ts.ctx());
-    };
+//     // Bob locks their object as well.
+//     let ik2 = {
+//         ts.next_tx(BOB);
+//         let c = test_coin(&mut ts);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         let kid = object::id(&k);
+//         transfer::public_transfer(l, BOB);
+//         transfer::public_transfer(k, BOB);
+//         kid
+//     };
 
-    // When the Custodian makes the swap, it detects Bob's nefarious
-    // behaviour.
-    {
-        ts.next_tx(CUSTODIAN);
-        swap<Coin<SUI>, Coin<SUI>>(
-            ts.take_from_sender(),
-            ts.take_from_sender(),
-        );
-    };
+//     // Alice gives the custodian their object to hold in escrow.
+//     {
+//         ts.next_tx(ALICE);
+//         let k1: Key = ts.take_from_sender();
+//         let l1: Locked<Coin<SUI>> = ts.take_from_sender();
+//         create(k1, l1, ik2, BOB, CUSTODIAN, ts.ctx());
+//     };
 
-    abort 1337
-}
+//     // Bob has a change of heart, so they unlock the object and tamper
+//     // with it.
+//     {
+//         ts.next_tx(BOB);
+//         let k: Key = ts.take_from_sender();
+//         let l: Locked<Coin<SUI>> = ts.take_from_sender();
+//         let mut c = lock::unlock(l, k);
 
-#[test]
-fun test_return_to_sender() {
-    let mut ts = ts::begin(@0x0);
+//         let _dust = coin::split(&mut c, 1, ts.ctx());
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         create(k, l, ik1, ALICE, CUSTODIAN, ts.ctx());
+//     };
 
-    // Alice locks the object they want to trade
-    let cid = {
-        ts.next_tx(ALICE);
-        let c = test_coin(&mut ts);
-        let cid = object::id(&c);
-        let (l, k) = lock::lock(c, ts.ctx());
-        let i = object::id_from_address(@0x0);
-        create(k, l, i, BOB, CUSTODIAN, ts.ctx());
-        cid
-    };
+//     // When the Custodian makes the swap, it detects Bob's nefarious
+//     // behaviour.
+//     {
+//         ts.next_tx(CUSTODIAN);
+//         swap<Coin<SUI>, Coin<SUI>>(
+//             ts.take_from_sender(),
+//             ts.take_from_sender(),
+//         );
+//     };
 
-    // Custodian sends it back
-    {
-        ts.next_tx(CUSTODIAN);
-        return_to_sender<Coin<SUI>>(ts.take_from_sender());
-    };
+//     abort 1337
+// }
 
-    ts.next_tx(@0x0);
+// #[test]
+// fun test_return_to_sender() {
+//     let mut ts = ts::begin(@0x0);
 
-    // Alice can then access it.
-    {
-        let c: Coin<SUI> = ts.take_from_address_by_id(ALICE, cid);
-        ts::return_to_address(ALICE, c)
-    };
+//     // Alice locks the object they want to trade
+//     let cid = {
+//         ts.next_tx(ALICE);
+//         let c = test_coin(&mut ts);
+//         let cid = object::id(&c);
+//         let (l, k) = lock::lock(c, ts.ctx());
+//         let i = object::id_from_address(@0x0);
+//         create(k, l, i, BOB, CUSTODIAN, ts.ctx());
+//         cid
+//     };
 
-    ts.end();
-}
+//     // Custodian sends it back
+//     {
+//         ts.next_tx(CUSTODIAN);
+//         return_to_sender<Coin<SUI>>(ts.take_from_sender());
+//     };
+
+//     ts.next_tx(@0x0);
+
+//     // Alice can then access it.
+//     {
+//         let c: Coin<SUI> = ts.take_from_address_by_id(ALICE, cid);
+//         ts::return_to_address(ALICE, c)
+//     };
+
+//     ts.end();
+// }

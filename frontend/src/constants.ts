@@ -19,10 +19,12 @@ export const CONSTANTS = {
     lockedType: `${escrowContract.packageId}::lock::Locked`,
     lockedKeyType: `${escrowContract.packageId}::lock::Key`,
     lockedObjectDFKey: `${escrowContract.packageId}::lock::LockedObjectKey`,
+    hashlockType: `${escrowContract.packageId}::hashlock::Hashlocked`,
+    hashlockEscrowType: `${escrowContract.packageId}::hashlock_shared::HashlockEscrow`,
   },
   demoContract: {
     ...demoContract,
     demoBearType: `${demoContract.packageId}::demo_bear::DemoBear`,
   },
-  apiEndpoint: "http://192.168.64.7:3001/",
+  apiEndpoint: "http://localhost:3001/",
 };

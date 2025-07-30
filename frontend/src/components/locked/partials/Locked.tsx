@@ -3,7 +3,7 @@
 
 import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
 import { SuiObjectDisplay } from "@/components/SuiObjectDisplay";
-import { Button } from "@radix-ui/themes";
+import { Button, Tabs } from "@radix-ui/themes";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -13,6 +13,7 @@ import { ExplorerLink } from "../../ExplorerLink";
 import { useState } from "react";
 import { ApiLockedObject } from "@/types/types";
 import { CreateEscrow } from "../../escrows/CreateEscrow";
+import { CreateHashlockEscrow } from "../../escrows/CreateHashlockEscrow";
 import { useUnlockMutation } from "@/mutations/locked";
 
 /**
@@ -30,6 +31,7 @@ export function Locked({
   hideControls?: boolean;
 }) {
   const [isToggled, setIsToggled] = useState(false);
+  const [escrowTab, setEscrowTab] = useState("regular");
   const account = useCurrentAccount();
   const { mutate: unlockMutation, isPending } = useUnlockMutation();
 
@@ -111,7 +113,22 @@ export function Locked({
         )}
         {isToggled && (
           <div className="min-w-[340px] w-full justify-self-start text-left">
-            <CreateEscrow locked={locked} />
+            <Tabs.Root value={escrowTab} onValueChange={setEscrowTab}>
+              <Tabs.List>
+                <Tabs.Trigger value="regular" className="cursor-pointer">
+                  Regular Escrow
+                </Tabs.Trigger>
+                <Tabs.Trigger value="hashlock" className="cursor-pointer">
+                  Hashlock Escrow
+                </Tabs.Trigger>
+              </Tabs.List>
+              <Tabs.Content value="regular">
+                <CreateEscrow locked={locked} />
+              </Tabs.Content>
+              <Tabs.Content value="hashlock">
+                <CreateHashlockEscrow locked={locked} />
+              </Tabs.Content>
+            </Tabs.Root>
           </div>
         )}
       </div>

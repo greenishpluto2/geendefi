@@ -44,6 +44,26 @@ const EVENTS_TO_TRACK: EventTracker[] = [
 		},
 		callback: handleEscrowObjects,
 	},
+	{
+		type: `${CONFIG.SWAP_CONTRACT.packageId}::hashlock_shared`,
+		filter: {
+			MoveEventModule: {
+				module: 'hashlock_shared',
+				package: CONFIG.SWAP_CONTRACT.packageId,
+			},
+		},
+		callback: handleEscrowObjects,
+	},
+	{
+		type: `${CONFIG.SWAP_CONTRACT.packageId}::hashlock`,
+		filter: {
+			MoveEventModule: {
+				module: 'hashlock',
+				package: CONFIG.SWAP_CONTRACT.packageId,
+			},
+		},
+		callback: handleLockObjects, // Hashlock events can be handled by lock handler for now
+	},
 ];
 
 const executeEventJob = async (

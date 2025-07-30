@@ -18,10 +18,25 @@ export function EscrowDashboard() {
             recipient: account?.address,
             swapped: "false",
             cancelled: "false",
+            isHashlock: "false",
           }}
         />
       ),
-      tooltip: "Escrows requested for your locked objects.",
+      tooltip: "Regular escrows requested for your locked objects.",
+    },
+    {
+      name: "Hashlock Escrows",
+      component: () => (
+        <EscrowList
+          params={{
+            recipient: account?.address,
+            swapped: "false",
+            cancelled: "false",
+            isHashlock: "true",
+          }}
+        />
+      ),
+      tooltip: "Hashlock escrows requiring secret revelation for cross-chain swaps.",
     },
     {
       name: "Browse Locked Objects",

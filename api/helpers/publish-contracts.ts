@@ -14,9 +14,5 @@ import { publishPackage } from '../sui-utils';
 		exportFileName: 'escrow-contract',
 	});
 
-	await publishPackage({
-		packagePath: __dirname + '/../../contracts/demo',
-		network: 'testnet',
-		exportFileName: 'demo-contract',
-	});
+
 })();

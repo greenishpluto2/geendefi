@@ -18,6 +18,10 @@ export type ApiEscrowObject = {
   itemId: string;
   swapped: boolean;
   cancelled: boolean;
+  isHashlock?: boolean;
+  hashCommitment?: string;
+  timeoutMs?: string;
+  secretRevealed?: string;
 };
 
 export type EscrowListingQuery = {
@@ -26,7 +30,24 @@ export type EscrowListingQuery = {
   recipient?: string;
   cancelled?: string;
   swapped?: string;
+  isHashlock?: string;
   limit?: string;
+};
+
+export type HashlockEscrowParams = {
+  objectId: string;
+  objectType: string;
+  exchangeKeyId: string;
+  recipient: string;
+  secret: string;
+  timeoutMs: number;
+};
+
+export type RevealSecretParams = {
+  escrowId: string;
+  secret: string;
+  lockedObjectId: string;
+  keyId: string;
 };
 
 export type LockedListingQuery = {

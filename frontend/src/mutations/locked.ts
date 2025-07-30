@@ -25,15 +25,14 @@ export function useLockObjectMutation() {
 
       const [locked, key] = txb.moveCall({
         target: `${CONSTANTS.escrowContract.packageId}::lock::lock`,
-        arguments: [txb.object(object.objectId), txb.object('0x6')],
+        arguments: [
+          txb.object(object.objectId),
+          txb.object('0x6'), // Clock object
+        ],
         typeArguments: [object.type!],
       });
 
       txb.transferObjects([locked, key], txb.pure.address(account.address));
-
-      console.log(123);
-      console.log(locked, key, txb)
-      console.log(key)
 
       return executeTransaction(txb);
     },
@@ -85,7 +84,10 @@ export function useUnlockMutation() {
       const item = txb.moveCall({
         target: `${CONSTANTS.escrowContract.packageId}::lock::break_timelock`,
         typeArguments: [suiObject.type!],
-        arguments: [txb.object(lockedId), txb.object('0x6')],
+        arguments: [
+          txb.object(lockedId), 
+          txb.object('0x6'), // Clock object
+        ],
       });
 
       txb.transferObjects([item], txb.pure.address(account.address));

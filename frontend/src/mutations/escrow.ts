@@ -62,9 +62,16 @@ export function useCancelEscrowMutation() {
         throw new Error("You need to connect your wallet!");
       const txb = new Transaction();
 
+      // Choose the correct function based on escrow type
+      const targetFunction = escrow.isHashlock 
+        ? `${CONSTANTS.escrowContract.packageId}::hashlock_shared::return_to_sender`
+        : `${CONSTANTS.escrowContract.packageId}::shared::return_to_sender`;
+
       const item = txb.moveCall({
-        target: `${CONSTANTS.escrowContract.packageId}::shared::return_to_sender`,
-        arguments: [txb.object(escrow.objectId)],
+        target: targetFunction,
+        arguments: escrow.isHashlock 
+          ? [txb.object(escrow.objectId), txb.object('0x6')] // Clock for hashlock
+          : [txb.object(escrow.objectId)], // No clock for regular escrow
         typeArguments: [suiObject?.type!],
       });
 

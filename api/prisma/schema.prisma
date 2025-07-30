@@ -40,9 +40,15 @@ model Escrow {
   itemId String?
   swapped Boolean @default(false)
   cancelled Boolean @default(false)
+  // Hashlock specific fields
+  isHashlock Boolean @default(false)
+  hashCommitment String?
+  timeoutMs String?
+  secretRevealed String?
   
   @@index([recipient])
   @@index([sender])
+  @@index([isHashlock])
 }
 
 /// Saves the latest cursor for a given key.

@@ -46,7 +46,7 @@ export function LockOwnedObjects() {
       loading={isFetchingNextPage}
     >
       {data?.map((obj) => (
-        <SuiObjectDisplay object={obj.data!}>
+        <SuiObjectDisplay key={obj.data?.objectId} object={obj.data!}>
           <div className="p-4 pt-1 text-right flex items-center justify-between">
             <p className="text-sm">
               Lock the item so it can be used for escrows.
