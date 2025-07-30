@@ -9,6 +9,9 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { keccak256 } from 'js-sha3';
+import sha256 from 'js-sha256';
+
+
 
 /**
  * Builds and executes the PTB to create a hashlock escrow.
@@ -210,6 +213,7 @@ export function useCreateHashlockMutation() {
   const currentAccount = useCurrentAccount();
   const executeTransaction = useTransactionExecution();
 
+
   return useMutation({
     mutationFn: async ({
       object,
@@ -229,9 +233,9 @@ export function useCreateHashlockMutation() {
         throw new Error("Secret must be at least 8 characters long!");
 
       // Convert secret to hash commitment (SHA-256)
-      const encoder = new TextEncoder();
-      const secretBytes = encoder.encode(secret);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', secretBytes);
+      const hash = sha256(secret);
+      const hashBuffer = new Uint8Array(hash.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+      
       const hashArray = Array.from(new Uint8Array(hashBuffer));
 
       const timeoutMs = timeoutHours * 60 * 60 * 1000; // Convert hours to milliseconds
@@ -248,6 +252,7 @@ export function useCreateHashlockMutation() {
         ],
         typeArguments: [object.type!],
       });
+
 
       txb.transferObjects([hashlock], txb.pure.address(currentAccount.address));
 
