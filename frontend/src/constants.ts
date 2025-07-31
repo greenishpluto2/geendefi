@@ -21,6 +21,7 @@ export const CONSTANTS = {
     lockedObjectDFKey: `${escrowContract.packageId}::lock::LockedObjectKey`,
     hashlockType: `${escrowContract.packageId}::hashlock::Hashlocked`,
     hashlockEscrowType: `${escrowContract.packageId}::hashlock_shared::HashlockEscrow`,
+    hashlockedObjectDFKey: `${escrowContract.packageId}::hashlock::HashlockedObjectKey`,
   },
   demoContract: {
     ...demoContract,

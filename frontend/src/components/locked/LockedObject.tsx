@@ -49,7 +49,7 @@ export function LockedObject({
     {
       parentId: object.objectId,
       name: {
-        type: CONSTANTS.escrowContract.lockedObjectDFKey,
+        type: CONSTANTS.escrowContract.hashlockedObjectDFKey,
         value: {
           dummy_field: false,
         },
