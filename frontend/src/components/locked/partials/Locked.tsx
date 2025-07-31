@@ -94,7 +94,7 @@ export function Locked({
             onClick={() => {
               unlockMutation({
                 hashlockId: locked.objectId,
-                hashlockType: '???'
+                hashlockType: suiObject.data!.type!
                 // keyId: locked.keyId,
                 // suiObject: suiObject.data!,
               });
