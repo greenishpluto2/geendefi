@@ -8,6 +8,7 @@ import { prisma } from '../db';
 import { getClient } from '../sui-utils';
 import { handleEscrowObjects } from './escrow-handler';
 import { handleLockObjects } from './locked-handler';
+import { handleHashlockObjects } from './hashlock-handler';
 
 type SuiEventsCursor = EventId | null | undefined;
 
@@ -52,7 +53,7 @@ const EVENTS_TO_TRACK: EventTracker[] = [
 				package: CONFIG.SWAP_CONTRACT.packageId,
 			},
 		},
-		callback: handleEscrowObjects,
+		callback: handleHashlockObjects,
 	},
 	{
 		type: `${CONFIG.SWAP_CONTRACT.packageId}::hashlock`,
@@ -62,7 +63,7 @@ const EVENTS_TO_TRACK: EventTracker[] = [
 				package: CONFIG.SWAP_CONTRACT.packageId,
 			},
 		},
-		callback: handleLockObjects, // Hashlock events can be handled by lock handler for now
+		callback: handleHashlockObjects,
 	},
 ];
 
