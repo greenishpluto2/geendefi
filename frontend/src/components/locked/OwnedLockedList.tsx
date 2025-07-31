@@ -39,8 +39,8 @@ export function OwnedLockedList() {
         hasNextPage={hasNextPage}
         loading={isFetchingNextPage || isLoading}
       >
-        {data?.map((item) => (
-          <LockedObject key={item.data?.objectId} object={item.data!} />
+        {data?.filter((item) => item.data).map((item) => (
+          <LockedObject key={item.data!.objectId} object={item.data!} />
         ))}
       </InfiniteScrollArea>
     </>

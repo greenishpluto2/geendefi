@@ -15,7 +15,7 @@ import { useCreateEscrowMutation } from "@/mutations/escrow";
  * select one to put on escrow.
  */
 export function CreateEscrow({ locked }: { locked: ApiLockedObject }) {
-  const [objectId, setObjectId] = useState<string | undefined>(undefined);
+  const [objectId, setObjectId] = useState<string>("");
   const account = useCurrentAccount();
 
   const { mutate: createEscrowMutation, isPending } = useCreateEscrowMutation();
@@ -126,7 +126,7 @@ export function CreateEscrow({ locked }: { locked: ApiLockedObject }) {
               {
                 onSuccess: () => {
                   refetch();
-                  setObjectId(undefined);
+                  setObjectId("");
                 },
               },
             );

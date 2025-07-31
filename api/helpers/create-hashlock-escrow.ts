@@ -4,6 +4,7 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { SuiClient } from '@mysten/sui/client';
 import crypto from 'crypto';
+import { keccak256 } from 'js-sha3';
 
 import { CONFIG } from '../config';
 import { getActiveAddress, signAndExecute } from '../sui-utils';
@@ -21,8 +22,8 @@ export const createHashlockEscrow = async (params: {
 }) => {
 	const { objectId, objectType, exchangeKeyId, recipient, secret, timeoutMs } = params;
 	
-	// Create hash commitment from secret
-	const hashCommitment = crypto.createHash('sha256').update(secret).digest();
+	// Create hash commitment from secret using keccak256 (same as Move contract)
+	const hashCommitment = Buffer.from(keccak256(secret), 'hex');
 
 	const txb = new Transaction();
 
@@ -90,8 +91,8 @@ export const createHashlock = async (params: {
 }) => {
 	const { objectId, objectType, recipient, secret, timeoutMs } = params;
 	
-	// Create hash commitment from secret
-	const hashCommitment = crypto.createHash('sha256').update(secret).digest();
+	// Create hash commitment from secret using keccak256 (same as Move contract)
+	const hashCommitment = Buffer.from(keccak256(secret), 'hex');
 
 	const txb = new Transaction();
 

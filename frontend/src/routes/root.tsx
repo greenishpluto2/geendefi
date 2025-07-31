@@ -3,7 +3,7 @@
 
 import { Toaster } from "react-hot-toast";
 import { Outlet } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { Header } from "../components/Header";
 import { Container } from "@radix-ui/themes";
 
 export function Root() {

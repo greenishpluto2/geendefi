@@ -116,11 +116,11 @@ export function LockedList({
         hasNextPage={hasNextPage}
         loading={isFetchingNextPage || isLoading}
       >
-        {suiObjects().map((object) => (
+        {suiObjects().filter((object) => object).map((object) => (
           <LockedObject
-            key={object?.objectId!}
+            key={object!.objectId}
             object={object!}
-            itemId={getItemId(object?.objectId)}
+            itemId={getItemId(object!.objectId)}
           />
         ))}
       </InfiniteScrollArea>

@@ -14,7 +14,7 @@ import { useCreateHashlockEscrowMutation } from "@/mutations/hashlock";
  * This includes setting a secret and timeout for cross-chain atomic swaps.
  */
 export function CreateHashlockEscrow({ locked }: { locked: ApiLockedObject }) {
-  const [objectId, setObjectId] = useState<string | undefined>(undefined);
+  const [objectId, setObjectId] = useState<string>("");
   const [secret, setSecret] = useState<string>("");
   const [timeoutHours, setTimeoutHours] = useState<number>(24); // Default 24 hours
   const account = useCurrentAccount();
@@ -199,7 +199,7 @@ export function CreateHashlockEscrow({ locked }: { locked: ApiLockedObject }) {
                 {
                   onSuccess: () => {
                     refetch();
-                    setObjectId(undefined);
+                    setObjectId("");
                     setSecret("");
                     setTimeoutHours(24);
                   },

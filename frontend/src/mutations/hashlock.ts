@@ -9,7 +9,6 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { keccak256 } from 'js-sha3';
-import sha256 from 'js-sha256';
 
 
 
@@ -40,6 +39,20 @@ export function useCreateHashlockEscrowMutation() {
       if (!secret || secret.length < 8)
         throw new Error("Secret must be at least 8 characters long!");
 
+      // Determine the exchange key based on the locked object type
+      // For Locked objects (lock module): use keyId
+      // For Hashlocked objects (hashlock module): use objectId
+      let exchangeKey;
+      if (locked.keyId && locked.keyId !== "") {
+        // This is likely a Locked object with a separate Key
+        exchangeKey = locked.keyId;
+        console.log("Using keyId as exchange key (Locked object):", exchangeKey);
+      } else {
+        // This is likely a Hashlocked object where objectId = keyId
+        exchangeKey = locked.objectId;
+        console.log("Using objectId as exchange key (Hashlocked object):", exchangeKey);
+      }
+
       // Convert secret to hash commitment using keccak256 (same as Move contract)
       const encoder = new TextEncoder();
       const secretBytes = encoder.encode(secret);
@@ -60,7 +73,7 @@ export function useCreateHashlockEscrowMutation() {
         target: `${CONSTANTS.escrowContract.packageId}::hashlock_shared::create_hashlock_escrow_with_duration`,
         arguments: [
           txb.object(object.objectId!),
-          txb.pure.id(locked.keyId),
+          txb.pure.id(exchangeKey),
           txb.pure.address(locked.creator!),
           txb.pure.vector('u8', hashArray),
           txb.pure.u64(timeoutMs),
@@ -113,82 +126,116 @@ export function useRevealSecretMutation() {
         throw new Error("Escrow does not have a hash commitment!");
       }
 
-      // Try both SHA-256 and keccak256 to see which matches
+      // Verify secret matches using keccak256 (same as Move contract)
       const encoder = new TextEncoder();
       const secretBytes = encoder.encode(secret);
-      
-      // Calculate SHA-256 hash
-      const sha256Buffer = await crypto.subtle.digest('SHA-256', secretBytes);
-      const sha256Array = Array.from(new Uint8Array(sha256Buffer));
-      const sha256Hex = sha256Array.map(b => b.toString(16).padStart(2, '0')).join('');
       
       // Calculate keccak256 hash
       const keccak256Hex = keccak256(secretBytes);
 
       console.log("Hash comparison:", { 
         storedHash: escrow.hashCommitment,
-        sha256Hash: sha256Hex,
         keccak256Hash: keccak256Hex,
-        sha256Matches: sha256Hex === escrow.hashCommitment,
         keccak256Matches: keccak256Hex === escrow.hashCommitment
       });
 
-      // Use the hash that matches
-      let hashHex;
-      if (sha256Hex === escrow.hashCommitment) {
-        hashHex = sha256Hex;
-        console.log("Using SHA-256 hash");
-      } else if (keccak256Hex === escrow.hashCommitment) {
-        hashHex = keccak256Hex;
-        console.log("Using keccak256 hash");
-      } else {
-        throw new Error(`Invalid secret! Neither SHA-256 nor keccak256 hash matches the stored commitment.`);
+      if (keccak256Hex !== escrow.hashCommitment) {
+        throw new Error(`Invalid secret! The keccak256 hash doesn't match the stored commitment.`);
       }
 
-      // Get the actual types of the objects
-      console.log("Fetching object types for:", [escrow.itemId, locked.itemId]);
+      console.log("Secret verified with keccak256 hash");
+
+      // Get the actual types of the objects and the locked object wrapper type
+      console.log("Fetching object types for:", [escrow.itemId, locked.itemId, locked.objectId]);
       
-      const escrowObject = await client.multiGetObjects({
-        ids: [escrow.itemId, locked.itemId],
+      const objectsToFetch = [escrow.itemId, locked.itemId, locked.objectId];
+      const fetchedObjects = await client.multiGetObjects({
+        ids: objectsToFetch,
         options: {
           showType: true,
+          showContent: true,
         },
       });
 
-      const escrowType = escrowObject.find(
+      const escrowType = fetchedObjects.find(
         (x) => x.data?.objectId === escrow.itemId,
       )?.data?.type;
 
-      const lockedType = escrowObject.find(
+      const lockedType = fetchedObjects.find(
         (x) => x.data?.objectId === locked.itemId,
       )?.data?.type;
 
-      console.log("Resolved types:", { escrowType, lockedType });
+      const lockedObjectType = fetchedObjects.find(
+        (x) => x.data?.objectId === locked.objectId,
+      )?.data?.type;
 
-      if (!escrowType || !lockedType) {
+      const lockedObjectData = fetchedObjects.find(
+        (x) => x.data?.objectId === locked.objectId,
+      )?.data;
+
+      console.log("Resolved types:", { escrowType, lockedType, lockedObjectType });
+      console.log("Locked object data:", lockedObjectData);
+
+      // For hashlocked objects, check the recipient field
+      if (lockedObjectData?.content?.dataType === "moveObject") {
+        console.log("Hashlocked object fields:", lockedObjectData.content.fields);
+        console.log("Current account:", currentAccount.address);
+        console.log("Hashlocked recipient:", (lockedObjectData.content.fields as any)?.recipient);
+        
+        // Check if current account can perform this operation for hashlocked objects
+        const hashlockRecipient = (lockedObjectData.content.fields as any)?.recipient;
+        
+        if (hashlockRecipient && hashlockRecipient !== currentAccount.address) {
+          console.error("Account mismatch for hashlock operation!");
+          console.error("Current account:", currentAccount.address);
+          console.error("Hashlock recipient:", hashlockRecipient);
+          console.error("Escrow recipient:", escrow.recipient);
+          
+          throw new Error(`Account mismatch! You (${currentAccount.address}) are not the recipient of the hashlock object (${hashlockRecipient}). Only the hashlock recipient can reveal the secret to claim the hashlock. This operation should be performed by the hashlock recipient.`);
+        }
+      }
+
+      if (!escrowType || !lockedType || !lockedObjectType) {
         throw new Error("Failed to fetch object types.");
       }
 
       const secretArray = Array.from(secretBytes);
-
-      console.log("Building transaction with:", {
-        target: `${CONSTANTS.escrowContract.packageId}::hashlock_shared::swap_with_secret`,
-        arguments: [escrow.objectId, escrow.keyId, locked.objectId, secretArray.length],
-        typeArguments: [escrowType, lockedType]
-      });
-
       const txb = new Transaction();
-      const result = txb.moveCall({
-        target: `${CONSTANTS.escrowContract.packageId}::hashlock_shared::swap_with_secret`,
-        arguments: [
-          txb.object(escrow.objectId),
-          txb.object(escrow.keyId),
-          txb.object(locked.objectId),
-          txb.pure.vector('u8', secretArray),
-          txb.object('0x6'), // Clock object
-        ],
-        typeArguments: [escrowType, lockedType],
-      });
+
+      // Check if the locked object is a Hashlocked or a Locked object
+      const isHashlocked = lockedObjectType.includes("::hashlock::Hashlocked");
+      
+      console.log("Is hashlocked object:", isHashlocked);
+
+      let result;
+      if (isHashlocked) {
+        // Use hashlock-to-hashlock swap function
+        console.log("Building transaction with hashlock_shared::swap_hashlock_for_hashlock");
+        result = txb.moveCall({
+          target: `${CONSTANTS.escrowContract.packageId}::hashlock_shared::swap_hashlock_for_hashlock`,
+          arguments: [
+            txb.object(escrow.objectId),
+            txb.object(locked.objectId),
+            txb.pure.vector('u8', secretArray),
+            txb.object('0x6'), // Clock object
+          ],
+          typeArguments: [escrowType, lockedType],
+        });
+      } else {
+        // Use regular escrow swap function for Locked objects
+        console.log("Building transaction with hashlock_shared::swap_with_secret");
+        result = txb.moveCall({
+          target: `${CONSTANTS.escrowContract.packageId}::hashlock_shared::swap_with_secret`,
+          arguments: [
+            txb.object(escrow.objectId),
+            txb.object(escrow.keyId),
+            txb.object(locked.objectId),
+            txb.pure.vector('u8', secretArray),
+            txb.object('0x6'), // Clock object
+          ],
+          typeArguments: [escrowType, lockedType],
+        });
+      }
 
       txb.transferObjects([result], txb.pure.address(currentAccount.address));
 
@@ -232,11 +279,16 @@ export function useCreateHashlockMutation() {
       if (!secret || secret.length < 8)
         throw new Error("Secret must be at least 8 characters long!");
 
-      // Convert secret to hash commitment (SHA-256)
-      const hash = sha256(secret);
-      const hashBuffer = new Uint8Array(hash.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+      // Convert secret to hash commitment using keccak256 (same as Move contract)
+      const encoder = new TextEncoder();
+      const secretBytes = encoder.encode(secret);
+      const hashHex = keccak256(secretBytes);
       
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      // Convert hex string to byte array
+      const hashArray = [];
+      for (let i = 0; i < hashHex.length; i += 2) {
+        hashArray.push(parseInt(hashHex.substr(i, 2), 16));
+      }
 
       const timeoutMs = timeoutHours * 60 * 60 * 1000; // Convert hours to milliseconds
 

@@ -24,6 +24,10 @@ export function LockedObject({
   itemId?: string;
   hideControls?: boolean;
 }) {
+  // Early return if object is null/undefined or missing required fields
+  if (!object || !object.objectId) {
+    return null;
+  }
   const owner = () => {
     if (
       !object.owner ||

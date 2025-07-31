@@ -1,0 +1,24 @@
+{
+  "name": "crosschain-swap-api",
+  "version": "1.0.0",
+  "description": "Cross-chain atomic swap deployment and API utilities",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "npx ts-node scripts/deploy-contracts.ts",
+    "create-demo": "npx ts-node scripts/create-demo-swaps.ts",
+    "dev": "npx ts-node scripts/event-monitor.ts",
+    "test-flow": "npm run deploy && npm run create-demo"
+  },
+  "dependencies": {
+    "@mysten/sui": "^1.37.1",
+    "js-sha3": "^0.9.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.3",
+    "ts-node": "^10.9.1"
+  },
+  "keywords": ["sui", "ethereum", "atomic-swaps", "htlc", "cross-chain"],
+  "license": "MIT"
+} 
